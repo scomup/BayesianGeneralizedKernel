@@ -12,6 +12,8 @@ sigma = 0.1
 def get_test_data(sigma):
     x = random.uniform(0, 2*np.pi)
     y = np.cos(x)
+    if(x > 3):
+        y = 0.
     y_prime = random.normalvariate(y, sigma)
     return x, y_prime
 
@@ -23,16 +25,17 @@ class Map2D():
         self.elevation = np.full_like(self.location,0) 
         self.lambdas = np.full_like(self.location,0)
 
-    def sparse_kernel(self, x, x_star):
+    def sparse_kernel(self, x, x_star,l=0.5):
         d = np.abs(x_star-x)
-        r = d/self.radius
+        r = d/l
         pi = np.pi
-        k = (2 + np.cos(2*pi*r))/3*(1-r) + (1/2*pi)*np.sin(2*pi*r)
+        k = (2 + np.cos(2*pi*r))/3*(1-r) + np.sin(2*np.pi*r)/(2*np.pi)
+        k[d>=l] = np.finfo(float).eps
         return k
 
     def update(self, x, y):
-        lb = int(np.clip( (x - self.radius/2.)/self.resolution, 0, np.size(self.location)))
-        ub = int(np.clip( (x + self.radius/2.)/self.resolution, 0, np.size(self.location)))
+        lb = int(np.clip( (x - self.radius)/self.resolution, 0, np.size(self.location)))
+        ub = int(np.clip( (x + self.radius)/self.resolution, 0, np.size(self.location)))
         x_star = self.location[lb:ub] #x_star represents the map locations that are within distance radius
         k = self.sparse_kernel(x,x_star)
         lam = self.lambdas[lb:ub]
@@ -76,6 +79,7 @@ for i in range(10000):
         plt.plot(map2d.location,np.cos(map2d.location), label='real points',linestyle="dashed")
         plt.plot(map2d.location,map2d.elevation + 3*std,c='b',linestyle="dotted")
         plt.plot(map2d.location,map2d.elevation - 3*std,c='b',linestyle="dotted", label='3 sigma')
+        #plt.plot(map2d.location,map2d.lambdas)
         plt.scatter(x_,y_,s=3,c='g', label='observed points')
         plt.legend(loc='lower right', borderaxespad=1)
 
