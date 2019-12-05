@@ -23,7 +23,7 @@ class MarkerPub(threading.Thread):
     def run(self):
         rospy.spin()
 
-    def pub_data(self, points, data_type = 'map'):
+    def pub_data(self, points, intensity, data_type = 'map'):
         #msg = self.surface_to_pcl(data,.1)
 
         msg = PointCloud2()
@@ -35,12 +35,17 @@ class MarkerPub(threading.Thread):
         msg.fields = [
             PointField('x', 0, PointField.FLOAT32, 1),
             PointField('y', 4, PointField.FLOAT32, 1),
-            PointField('z', 8, PointField.FLOAT32, 1)]
+            PointField('z', 8, PointField.FLOAT32, 1),
+            PointField('intensity', 12, PointField.FLOAT32, 1)]
 
         msg.is_bigendian = False
-        msg.point_step = 12
-        msg.row_step = 12*msg.height
+        msg.point_step = 16
+        msg.row_step = 16*msg.height
         msg.is_dense = True
+        if(intensity is None):
+            points = np.hstack([points, np.zeros([points.shape[0], 1])])
+        else:
+            points = np.hstack([points,intensity.reshape([-1,1])])
         msg.data = np.asarray(points, np.float32).tostring()
         if(data_type == 'map'):
             self.map_pub.publish(msg)
