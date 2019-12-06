@@ -81,22 +81,23 @@ class Map3D():
         slope = np.arccos(np.abs(v[2,small_idx]))/ np.pi * 180
         if(np.isnan(slope)):
             print(slope)
-        h = 0
-        s = 0
-        r = 0
+        h = 0 #step height
+        s = 0 #slope
+        r = 0 #rough
 
-        h_crit = 30.
-        s_crit = 0.1
+        h_crit = 0.2
+        s_crit = 10.
         r_crit = 0.5
-        h = np.abs(slope) / h_crit
-        s = max_step / s_crit
+
+        s = 1. / (1. + np.exp(-(slope - s_crit)))
+        h = max_step / h_crit
         r = np.sqrt(cov[2,2] )/ r_crit
         v = 0
         if (h > 1 or s > 1 or r > 1):
             v = 1
         else:
             v = np.min([0.9 * h + 0.105 * s + 0.05 * r, 1.0])
-        return v
+        return s
 
 
     def points_in_circle(self, radius, x0=0, y0=0):
@@ -113,10 +114,11 @@ class Map3D():
         return np.array(points)
 
     def update(self, point):
-        #if(point[0]>3 or point[0]<-3):
-        #    return
-        #if(point[1]>3 or point[1]<-3):
-        #    return
+        area = 30
+        if(point[0]>area or point[0]<-area):
+            return
+        if(point[1]>area or point[1]<-area):
+            return
         
         self.raw_points.append(point)
         m = self.w2m(point)
