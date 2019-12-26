@@ -34,6 +34,7 @@ class Map3D():
         self.traversability = np.full_like(self.raw_data,0)
         self.alpha = np.full_like(self.raw_data,0)
         self.beta = np.full_like(self.raw_data,0)
+        self.variance = np.full_like(self.raw_data,0)
         self.raw_points = []
     
     def get_points(self):
@@ -47,7 +48,8 @@ class Map3D():
     def get_traversability(self):
         l = self.lambdas.reshape([-1])
         t = self.traversability.reshape([-1,1])
-        return t[l>0,:]
+        #t = self.variance.reshape([-1,1])
+        return np.sqrt(t[l>0,:])
 
 
     def w2m(self, w):
@@ -67,6 +69,11 @@ class Map3D():
         dist = np.linalg.norm(diff, axis=0)
         r = dist/l
         pi = np.pi
+        try:
+            k = (2 + np.cos(2*pi*r))/3*(1-r) + np.sin(2*np.pi*r)/(2*np.pi)
+        except:
+            (2 + np.cos(2*pi*r))/3*(1-r) + np.sin(2*np.pi*r)/(2*np.pi)
+
         k = (2 + np.cos(2*pi*r))/3*(1-r) + np.sin(2*np.pi*r)/(2*np.pi)
         k[dist>=l] = np.finfo(float).eps
         return k
@@ -122,15 +129,25 @@ class Map3D():
         
         self.raw_points.append(point)
         m = self.w2m(point)
+
         points_m = self.points_in_circle(self.radius/self.resolution, x0 =  m[0], y0 =  m[1])
         if(points_m.size == 0):
             return
         points_w = self.m2w(points_m)
-        k = self.sparse_kernel(point, points_w)
         
         lam = self.lambdas[points_m[:,1], points_m[:,0]]
         mu_0 = self.elevation[points_m[:,1], points_m[:,0]]
+        var = self.variance[points_m[:,1], points_m[:,0]]
+
+
+        #v_cur = np.max(var)
+        #w = np.exp(-v_cur*20)
+        k = self.sparse_kernel(point, points_w, 0.3 )
         y_star = (lam * mu_0 + k * point[2])/(lam + k)
+
+        self.variance[points_m[:,1], points_m[:,0]] = (lam/(lam + k))*(var + k*(mu_0 - point[2])**2/(lam + k))
+
+
         self.elevation[points_m[:,1], points_m[:,0]] = y_star
         self.lambdas[points_m[:,1], points_m[:,0]] = lam + k
 
@@ -148,7 +165,8 @@ if __name__ == '__main__':
     #    points.append([0,x,y])
     #points = np.array(points)
 
-    points = np.load('urban01.npy')
+    points = np.load('tough.npy')
+    #points = np.load('urban01.npy')
     map3d = Map3D(40, resolution = 0.05, radius = 0.3)
     mp = MarkerPub()
     mp.start()
