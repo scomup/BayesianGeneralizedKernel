@@ -8,11 +8,14 @@
 #include <memory>
 #include <iostream>
 #include <eigen3/Eigen/Dense>
+#include <eigen3/Eigen/Sparse>
+
 #include <eigen3/Eigen/Geometry>
 
 namespace BGK
 {
 constexpr double inf = std::numeric_limits<double>::infinity();
+
 
 struct Cell
 {
@@ -42,6 +45,17 @@ struct Cell
 	//std::array<Cell* , 8> neighbours;
 };
 
+class Grid
+{
+public:
+	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+	Grid(const float x, const float y) : loc_(x, y),weight_(0){}
+	const Eigen::Vector2f loc_;
+	Eigen::SparseMatrix<float> pdf_; //Probability density function
+	std::vector<Cell*> cells_;
+	float weight_ = 0;
+
+};
 
 
 }

@@ -61,6 +61,8 @@
         "typeindex": "cpp",
         "typeinfo": "cpp",
         "valarray": "cpp",
-        "random": "cpp"
+        "random": "cpp",
+        "sparse": "cpp",
+        "*.ipp": "cpp"
     }
 }

@@ -77,7 +77,12 @@ class Map2D():
         lb = int(np.clip( (x - self.radius)/self.resolution, 0, np.size(self.location)))
         ub = int(np.clip( (x + self.radius)/self.resolution, 0, np.size(self.location)))
         x_star = self.location[lb:ub] #x_star represents the map locations that are within distance radius
-        k = self.sparse_kernel(x,x_star)**10
+        k = self.sparse_kernel(x,x_star)
+        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.1))
+        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.2))
+        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.5))
+
+        plt.show()
         lam = self.lambdas[lb:ub]
         mu_0 = self.elevation[lb:ub] 
         var = self.variance[lb:ub]

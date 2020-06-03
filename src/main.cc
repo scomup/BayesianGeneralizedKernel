@@ -20,7 +20,7 @@
 #include <pcl/io/pcd_io.h>
 #include <pcl/kdtree/kdtree_flann.h>
 #include <pcl/features/normal_3d.h>
-#include "MultiLevelGrid.h"
+#include "GridmapKDE.h"
 
 
 
@@ -44,17 +44,22 @@ pcl::PointCloud<pcl::PointXYZ>::Ptr LoadPcdFile(std::string file_name)
 int main(int argc, char **argv)
 {
 
+
     ros::init(argc, argv, "trav");
     ros::NodeHandle nh;
+    ros::Publisher  map3d_pub = nh.advertise<sensor_msgs::PointCloud2 >("cloud", 100, true);
 
     assert(argc >= 2);
     std::cout << "pcd file:" << argv[1] << std::endl;
     auto cloud_raw = LoadPcdFile(argv[1]);
-    BGK::MultiLevelGrid mls(0.1);
-    mls.setInput(cloud_raw);
-
-    std::cout<<"OK"<<std::endl;
-
+    BGK::GridmapKDE gridmap(0.1);
+    gridmap.setInput(cloud_raw);
+    auto cloud = gridmap.getCloud();
+    sensor_msgs::PointCloud2 output;
+    pcl::toROSMsg(*cloud, output);
+    output.header.frame_id = "map";
+    map3d_pub.publish(output);
+    std::cout<<"OK:"<<cloud->points.size()<<std::endl;
     ros::spin();
     // Finish
     ;
