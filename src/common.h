@@ -22,7 +22,8 @@ namespace BGK
         std::vector<float> v;
         for (float x = -l; x < l; x += step)
         {
-            v.push_back(sparse(x, l));
+            float k = sparse(x, l);
+            v.push_back(k);
         }
         return v;
     }

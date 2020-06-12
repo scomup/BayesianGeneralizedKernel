@@ -16,7 +16,7 @@ find_package(Pangolin REQUIRED)
 find_package(yaml-cpp REQUIRED)
 
 
-find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs  message_filters laser_geometry visualization_msgs  rosbag)
+find_package(catkin REQUIRED COMPONENTS roscpp nav_msgs  message_filters laser_geometry visualization_msgs  rosbag eigen_conversions)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 

@@ -7,16 +7,17 @@ namespace BGK
 		: bits_(4),
 		  grid_resolution_(grid_resolution),
 		  height_resolution_(0.02),
-		  radius_(0.5),
-		  bandwidth_(0.3),
+		  radius_(0.4),
+		  bandwidth_(0.2),
 		  min_height_(-2),
 		  max_height_(2),
-		  height_n_(std::floor((max_height_ - min_height_ + 2 * bandwidth_) / height_resolution_))
+		  height_n_(std::floor((max_height_ - min_height_ + 2 * bandwidth_) / height_resolution_) + 1)
 	{
 		std::vector<Grid *> grids(1 << 2 * bits_, nullptr);
 		grids_ = std::move(grids);
 	}
 
+/*
 	Grid* Gridmap::getGrid(const Eigen::Vector3f &point)
 	{
 		auto idx = To2DIndex(point, bits_);
@@ -24,8 +25,8 @@ namespace BGK
 			return nullptr;
 		return grids_[ToFlatIndex(idx, bits_)];
 	}
-
-	Grid* Gridmap::addGrid(const Eigen::Vector3f &point)
+*/
+	Grid* Gridmap::getGrid(const Eigen::Vector3f &point)
 	{
 		//If the new point is outside the current map, expand the map.
 		auto idx = To2DIndex(point, bits_);
@@ -69,6 +70,7 @@ namespace BGK
 
 	grids_ = std::move(new_grid);
     bits_ = new_bits;
+	std::cout<<"grow! new map size:"<<grids_.size()<<std::endl;
   }
 	
 

@@ -16,7 +16,7 @@ namespace BGK
 	{
 	public:
 		Gridmap(double resolution);
-		Grid* addGrid(const Eigen::Vector3f &point);
+		//Grid* addGrid(const Eigen::Vector3f &point);
 		Grid* getGrid(const Eigen::Vector3f &point);
 
 

@@ -49,11 +49,15 @@ class Grid
 {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	Grid(const float x, const float y) : loc_(x, y),weight_(0){}
+	Grid(const float x, const float y) : loc_(x, y),weight_(0),marker(false){}
 	const Eigen::Vector2f loc_;
-	Eigen::SparseMatrix<float> pdf_; //Probability density function
+	Eigen::SparseVector<float, Eigen::RowMajor> pdf_; //Probability density function
+	//Eigen::VectorXf dense_pdf_; //Probability density function
+	//std::map<int, float > mappdf_;
 	std::vector<Cell*> cells_;
-	float weight_ = 0;
+	float weight_;
+	//std::vector<Eigen::Triplet<float>> triplet_list_;
+	bool marker;
 
 };
 
