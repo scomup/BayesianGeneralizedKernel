@@ -5,37 +5,44 @@ import numpy as np
 import matplotlib.pyplot as plt
 from math import *
 import random
+random.seed(0)
 
-
-sigma = 0.01
+sigma = 0.05
 
 def get_test_data(sigma):
     x = random.uniform(0, 2*np.pi)
     y = np.cos(x)
-    if(x > 3):
-        y = 0.
     y_prime = random.normalvariate(y, sigma)
-    return x, y_prime
+    return x, y, y_prime
 def step_signal(sigma):
     b = random.uniform(0, 1)
     b = b > 0.95
     if(b == True):
         x = 3
-        y = random.uniform(0, 0.5)
+        y = random.uniform(-1,1)
     else:
         x = random.uniform(0, 2*np.pi)
         if(x < 3):
-            y = 0
+            y = np.cos(x)
         else:
-            y = 0.5
-    x_prime = random.normalvariate(x, sigma)
+            y = 1
+    x_prime = random.normalvariate(x, sigma/2)
     y_prime = random.normalvariate(y, sigma)
-    return x_prime, y_prime
+    return x_prime, y, y_prime
+
+def step_signal_true():
+    x = np.arange(-2,5,0.01)
+    y = np.where(x<3,np.cos(x),1)
+
+    return x, y
+
+
+
 class Map2D():
-    def __init__(self, x_min, x_max, resolution, radius=0.2):
+    def __init__(self, x_min, x_max, resolution, radius=0.2, use_b = False):
         self.resolution = resolution
         self.radius = radius
-        self.location = np.arange(x_min, x_max, resolution)
+        self.location = np.arange(x_min, x_max+1, resolution)
         self.elevation = np.full_like(self.location,0) 
         self.lambdas = np.full_like(self.location,0)
         self.variance = np.full_like(self.location,1)
@@ -43,6 +50,7 @@ class Map2D():
         self.traversability = np.full_like(self.location,0)
         self.alpha = np.full_like(self.location,0)
         self.beta = np.full_like(self.location,0)
+        self.use_b = use_b
 
     def sparse_kernel(self, x, x_star,l=0.5):
         d = np.abs(x_star-x)
@@ -77,15 +85,25 @@ class Map2D():
         lb = int(np.clip( (x - self.radius)/self.resolution, 0, np.size(self.location)))
         ub = int(np.clip( (x + self.radius)/self.resolution, 0, np.size(self.location)))
         x_star = self.location[lb:ub] #x_star represents the map locations that are within distance radius
-        k = self.sparse_kernel(x,x_star)
-        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.1))
-        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.2))
-        plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.5))
+        #x = np.arange(-3,3,0.05)
 
-        plt.show()
+        #k = self.sparse_kernel(x,0,l=self.radius)
+        #plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.1))
+        #plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.2))
+        #plt.plot(x_star-x,self.sparse_kernel(x,x_star,l=0.5))
+        k = self.sparse_kernel(x,x_star, l=self.radius)
         lam = self.lambdas[lb:ub]
         mu_0 = self.elevation[lb:ub] 
         var = self.variance[lb:ub]
+        if(self.use_b):
+            std = np.sqrt(self.variance[ int(x/self.resolution)-1])
+            s = np.exp(-2*std)
+            k = self.sparse_kernel(x,x_star, l=s*self.radius)
+            #b = self.sparse_kernel(y - mu_0, 0.3)
+            #b[lam < 1] = 1.
+            #k=k * b
+            
+
         
         #w = np.abs(mu_0 - y)
         #w = np.exp(-w*10)
@@ -97,59 +115,50 @@ class Map2D():
         self.elevation[lb:ub] = y_star
         self.lambdas[lb:ub] = lam + k
 
-        v = self.calc_traversability(self.location[lb:ub], self.elevation[lb:ub])
-        alpha_star = self.alpha[lb:ub] + k*v
-        beta_star = self.beta[lb:ub] + k*(1-v)
-        self.traversability[lb:ub] = alpha_star/(alpha_star + beta_star)
-        self.alpha[lb:ub] = alpha_star
-        self.beta[lb:ub] = beta_star
-
-        #if(self.show == True):
-        #    var = sigma**2/self.lambdas
-        #    std = np.sqrt(var)
-        #    plt.scatter(x, y, c='r')
-        #    plt.plot(location,elevation)
-        #    plt.plot(location,elevation + 3*std,c='b',linestyle="dotted")
-        #    plt.plot(location,elevation - 3*std,c='b',linestyle="dotted")
-        #    plt.scatter(x_,y_,s=3,c='g')
-        #    plt.pause(0.1)
-        #    plt.cla()
-        #    plt.ylim(-1.5, 1.5)
-        #    plt.xlim(0, 2*np.pi)
+        #v = self.calc_traversability(self.location[lb:ub], self.elevation[lb:ub])
+        #alpha_star = self.alpha[lb:ub] + k*v
+        #beta_star = self.beta[lb:ub] + k*(1-v)
+        #self.traversability[lb:ub] = alpha_star/(alpha_star + beta_star)
+        #self.alpha[lb:ub] = alpha_star
+        #self.beta[lb:ub] = beta_star
 
 
-map2d = Map2D(0,np.pi*2,0.01,0.4)
+map2d = Map2D(0,np.pi*2,0.01,0.5)
+map2db = Map2D(0,np.pi*2,0.01,0.5, use_b=True)
 
-
-plt.ylim(-3, 3)
-plt.xlim(0, 2*np.pi)
 
 x_ = []
 y_ = []
+y_p_ = []
 show = 0
-for i in range(10000):
-    x, y = step_signal(sigma)
+for i in range(200):
+    x, y, yp = step_signal(sigma)
     x_.append(x)
     y_.append(y)
-    map2d.update(x, y)
-    show += 1
-    if(show == 100):
-        show = 0
-        var = map2d.variance
-        std = np.sqrt(var)
-        plt.scatter(x, y, c='r')
-        plt.plot(map2d.location,map2d.elevation, label='predicted points')
-        plt.plot( map2d.location,map2d.variance*10, label='variance',linestyle="dashed")
-        s = 1
-        plt.plot(map2d.location,map2d.elevation + s*std,c='b',linestyle="dotted")
-        plt.plot(map2d.location,map2d.elevation - s*std,c='b',linestyle="dotted", label='3 sigma')
-        #plt.plot(map2d.location,map2d.lambdas)
-        plt.scatter(x_,y_,s=3,c='g', label='observed points')
-        plt.legend(loc='lower right', borderaxespad=1)
+    y_p_.append(yp)
+    map2d.update(x, yp)
+    map2db.update(x, yp)
 
-        plt.pause(0.1)
-        plt.waitforbuttonpress()
-        plt.cla()
-        plt.ylim(-1.5, 1.5)
-        plt.xlim(0, 2*np.pi)
+fig, ax = plt.subplots(2,1)
+ax[0].set_ylim(-2,2)
+ax[0].set_xlim(1, 5)
+ax[1].set_ylim(0,0.8)
+ax[1].set_xlim(1, 5)
+
+var = map2d.variance
+std = np.sqrt(var)
+ax[0].plot(map2d.location,map2d.elevation,c='r', label='using fixed kernel')
+ax[0].plot(map2db.location,map2db.elevation,c='b', label='using adaptive kernel')
+x, y= step_signal_true()
+ax[0].plot(x, y,c='g', linestyle="dotted", label='ground true')
+
+ax[0].scatter(x_,y_p_,s=3,c='g', label='observed points')
+ax[0].legend(loc='lower right', borderaxespad=1,fontsize=10)
+s = 1
+ax[1].plot(map2d.location, np.ones_like(map2d.location)*0.5,c='r',linestyle="dotted", label="Fixed kernel size")
+ax[1].plot(map2d.location, np.exp(-2*std)*0.5,c='b',linestyle="dotted",label="Adaptive kernel size")
+ax[1].legend(loc='lower right', borderaxespad=1,fontsize=10)
+
+plt.show()
+
 
